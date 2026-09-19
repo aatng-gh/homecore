@@ -1,0 +1,27 @@
+variant: fcos
+version: 1.7.0
+
+systemd:
+  units:
+    - name: homecore-smoke.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Verify the generated Homecore disk
+        Wants=ignition-complete.target
+        After=ignition-complete.target
+
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/bin/test -x /usr/bin/nomad
+        ExecStart=/usr/bin/test -x /usr/bin/tailscale
+        ExecStart=/usr/bin/test -x /usr/bin/tailscaled
+        ExecStart=/usr/bin/test -x /usr/libexec/nomad/plugins/nomad-driver-podman
+        ExecStart=/usr/bin/test -x /usr/libexec/cni/bridge
+        ExecStart=/usr/bin/test -x /usr/bin/firewall-cmd
+        ExecStart=/usr/bin/bootc status
+        ExecStart=/usr/bin/sh -c 'printf "HOMECORE_SMOKE_PASS\n" >/dev/ttyS0'
+        ExecStart=/usr/bin/systemctl --no-block poweroff
+
+        [Install]
+        WantedBy=multi-user.target
