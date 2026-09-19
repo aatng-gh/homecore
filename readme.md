@@ -10,13 +10,17 @@ public repository owns only the reusable OS image and local disk validation.
 
 ## Local validation
 
-Requirements are `just`, a running rootful Podman machine, and—only for the
-boot smoke test—`qemu-system-x86_64`. On Apple Silicon the x86-64 smoke test
-uses software emulation and is slower.
+Requirements are `just`, Podman, and—only for the boot smoke test—
+`qemu-system-x86_64`. On macOS, `just machine` creates or starts a dedicated
+rootful `homecore-builder` Podman machine. `just image` works on Apple Silicon
+through Rosetta. Disk conversion currently requires an x86-64 host because the
+image builder's nested x86-64 `crun` cannot run under ARM translation.
 
 ```sh
 just check
+just machine
 just image
+# On an x86-64 host:
 just test ghcr.io/aatng-gh/homecore@sha256:<manifest-digest>
 ```
 
@@ -25,7 +29,10 @@ The immutable digest supplies the disk contents. The resulting system follows
 tagged update reference is passed as the second argument.
 
 Generated QCOW2, compressed raw disk, checksums, metadata, Ignition, and serial
-logs remain under the ignored `build/` directory.
+logs remain under the ignored `build/` directory. Override the dedicated
+machine name and resources with `HOMECORE_PODMAN_MACHINE`,
+`HOMECORE_PODMAN_CPUS`, `HOMECORE_PODMAN_MEMORY`, and
+`HOMECORE_PODMAN_DISK_SIZE` when necessary.
 
 ## Publishing
 

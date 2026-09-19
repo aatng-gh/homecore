@@ -7,6 +7,10 @@ default:
 check:
     ./scripts/check.sh
 
+# Create or start the dedicated rootful Podman builder environment.
+machine:
+    ./scripts/ensure-machine.sh
+
 # Build and inspect the local x86-64 Homecore OCI image.
 image:
     ./scripts/build-image.sh

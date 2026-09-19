@@ -3,8 +3,11 @@ set -euo pipefail
 
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "${repo_dir}"
+podman_cmd=()
 # shellcheck disable=SC1091
 . config/versions.env
+# shellcheck disable=SC1091
+. scripts/lib/podman.sh
 
 source_image=${1:-}
 update_image=${2:-}
@@ -20,29 +23,23 @@ output_dir=${HOMECORE_DISK_OUTPUT_DIR:-${repo_dir}/build/disks}
 }
 command -v podman >/dev/null 2>&1 || { echo "podman is required" >&2; exit 1; }
 command -v xz >/dev/null 2>&1 || { echo "xz is required" >&2; exit 1; }
-
-rootless=$(podman info --format '{{.Host.Security.Rootless}}') || {
-  echo "start Podman before building disks" >&2
+[[ $(uname -m) == x86_64 ]] || {
+  echo "Homecore disk builds currently require an x86-64 host" >&2
+  echo "run 'just image' for local ARM validation; CI publishes the x86-64 image" >&2
   exit 1
 }
-[[ ${rootless} == false ]] || {
-  echo "bootc-image-builder requires rootful Podman" >&2
-  if [[ $(uname -s) == Darwin ]]; then
-    echo "run: podman machine stop && podman machine set --rootful && podman machine start" >&2
-  fi
-  exit 1
-}
+homecore_podman_init
 
 mkdir -p "${output_dir}"
 output_dir=$(cd "${output_dir}" && pwd)
 
 # The local update tag points at the already verified digest. The builder reads
 # that local store, so disk contents are immutable while bootc follows the tag.
-podman pull --arch amd64 "${source_image}"
-podman tag "${source_image}" "${update_image}"
-podman pull --arch amd64 "${BOOTC_IMAGE_BUILDER_IMAGE}"
+"${podman_cmd[@]}" pull --arch amd64 "${source_image}"
+"${podman_cmd[@]}" tag "${source_image}" "${update_image}"
+"${podman_cmd[@]}" pull --arch amd64 "${BOOTC_IMAGE_BUILDER_IMAGE}"
 
-podman run --rm --arch amd64 --privileged \
+"${podman_cmd[@]}" run --rm --arch amd64 --privileged \
   --security-opt label=type:unconfined_t \
   --volume "${output_dir}:/output" \
   --volume /var/lib/containers/storage:/var/lib/containers/storage \
