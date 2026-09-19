@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Cleanup is invoked indirectly by an EXIT trap.
+# shellcheck disable=SC2317
 set -euo pipefail
 
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
