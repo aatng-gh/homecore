@@ -11,6 +11,6 @@ check:
 image:
     ./scripts/build-image.sh
 
-# Build a compressed x86-64 raw disk from an immutable OCI digest.
-disk source_image update_image="ghcr.io/aatng-gh/homecore:stable":
-    ./scripts/build-disk.sh {{ quote(source_image) }} {{ quote(update_image) }}
+# Build a compressed x86-64 raw disk from stable or a specified published tag.
+disk image="ghcr.io/aatng-gh/homecore:stable":
+    ./scripts/build-disk.sh {{ quote(image) }}

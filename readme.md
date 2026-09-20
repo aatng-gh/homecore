@@ -20,22 +20,22 @@ run under ARM translation.
 just check
 just image
 # On an x86-64 host:
-just disk ghcr.io/aatng-gh/homecore@sha256:<manifest-digest>
+just disk
+# Or build from a specific published tag:
+just disk ghcr.io/aatng-gh/homecore:sha-<commit>
 ```
 
-The immutable digest supplies the disk contents. The resulting system follows
-`ghcr.io/aatng-gh/homecore:stable` for future bootc updates unless a different
-tagged update reference is passed as the second argument.
+`just disk` builds from `ghcr.io/aatng-gh/homecore:stable`; the installed system
+follows that tag for future bootc updates. Pass one tagged image reference to
+build and follow a different published image.
 
-The compressed raw disk, checksum, and provenance metadata remain under the
-ignored `build/` directory. Override the dedicated machine name and resources
-with `HOMECORE_PODMAN_MACHINE`,
+The compressed raw disk and its checksum remain under the ignored `build/`
+directory. Override the dedicated machine name and resources with
+`HOMECORE_PODMAN_MACHINE`,
 `HOMECORE_PODMAN_CPUS`, `HOMECORE_PODMAN_MEMORY`, and
 `HOMECORE_PODMAN_DISK_SIZE` when necessary.
 
 ## Publishing
 
 Pull requests validate and build without publishing. Merges to `main` publish
-`candidate` and `sha-<commit>` to the public GHCR package. The manual promotion
-workflow verifies that the commit-specific tag resolves to the selected digest
-before moving `stable`.
+`stable` and immutable `sha-<commit>` tags to the public GHCR package.
