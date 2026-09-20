@@ -43,6 +43,9 @@ RUN set -eux; \
     /usr/bin/tailscale version; \
     test -x /usr/libexec/cni/bridge; \
     test -x /usr/bin/firewall-cmd; \
+    systemctl mask systemd-homed.service systemd-homed-activate.service; \
+    test "$(systemctl is-enabled systemd-homed.service)" = masked; \
+    test "$(systemctl is-enabled systemd-homed-activate.service)" = masked; \
     printf '%s\n' 'L+ /etc/resolv.conf - - - - ../run/systemd/resolve/stub-resolv.conf' \
       > /usr/lib/tmpfiles.d/homecore-resolv.conf; \
     unlink /etc/resolv.conf; \
