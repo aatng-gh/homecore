@@ -33,20 +33,22 @@ mkdir -p "${output_dir}"
 output_dir=$(cd "${output_dir}" && pwd)
 
 "${podman_cmd[@]}" pull --arch amd64 "${image}"
-"${podman_cmd[@]}" pull --arch amd64 "${BOOTC_IMAGE_BUILDER_IMAGE}"
+"${podman_cmd[@]}" pull --arch amd64 "${IMAGE_BUILDER_IMAGE}"
 
 "${podman_cmd[@]}" run --rm --arch amd64 --privileged \
   --security-opt label=type:unconfined_t \
   --volume "${output_dir}:/output" \
   --volume /var/lib/containers/storage:/var/lib/containers/storage \
-  "${BOOTC_IMAGE_BUILDER_IMAGE}" \
-  --chown "$(id -u):$(id -g)" \
-  --output /output \
-  --progress verbose \
-  --rootfs xfs \
-  --target-arch amd64 \
-  --type raw \
-  "${image}"
+  "${IMAGE_BUILDER_IMAGE}" \
+  build \
+  --bootc-default-fs xfs \
+  --bootc-ref "${image}" \
+  --output-dir /output/image \
+  raw
+
+if [[ ${EUID} -ne 0 ]]; then
+  sudo chown -R "$(id -u):$(id -g)" "${output_dir}"
+fi
 
 raw=${output_dir}/image/disk.raw
 compressed_raw=${raw}.xz
