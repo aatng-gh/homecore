@@ -11,7 +11,7 @@ podman_cmd=()
 
 source_image=${1:-}
 update_image=${2:-}
-output_dir=${HOMECORE_DISK_OUTPUT_DIR:-${repo_dir}/build/disks}
+output_dir=${HOMECORE_DISK_OUTPUT_DIR:-${repo_dir}/build/disk}
 
 [[ ${source_image} =~ ^[^[:space:]@]+@sha256:[0-9a-f]{64}$ ]] || {
   echo "usage: $0 <registry/image@sha256:digest> <registry/image:update-tag>" >&2
@@ -49,15 +49,13 @@ output_dir=$(cd "${output_dir}" && pwd)
   --progress verbose \
   --rootfs xfs \
   --target-arch amd64 \
-  --type qcow2 \
   --type raw \
   "${update_image}"
 
-qcow2=${output_dir}/qcow2/disk.qcow2
 raw=${output_dir}/image/disk.raw
-[[ -s ${qcow2} ]] || { echo "builder did not produce ${qcow2}" >&2; exit 1; }
+compressed_raw=${raw}.xz
 [[ -s ${raw} ]] || { echo "builder did not produce ${raw}" >&2; exit 1; }
-xz --threads=0 --keep --force "${raw}"
+xz --threads=0 --force "${raw}"
 
 if command -v sha256sum >/dev/null 2>&1; then
   sha256() { sha256sum "$1" | awk '{print $1}'; }
@@ -65,19 +63,13 @@ else
   sha256() { shasum -a 256 "$1" | awk '{print $1}'; }
 fi
 
-qcow2_sha=$(sha256 "${qcow2}")
-raw_sha=$(sha256 "${raw}.xz")
+raw_sha=$(sha256 "${compressed_raw}")
 cat >"${output_dir}/metadata.env" <<EOF
 HOMECORE_SOURCE_IMAGE=${source_image}
 HOMECORE_UPDATE_IMAGE=${update_image}
-HOMECORE_QCOW2_SHA256=${qcow2_sha}
-HOMECORE_RAW_XZ_SHA256=${raw_sha}
+HOMECORE_RAW_IMAGE_SHA256=${raw_sha}
 BOOTC_IMAGE_BUILDER_IMAGE=${BOOTC_IMAGE_BUILDER_IMAGE}
 EOF
-printf '%s  %s\n' \
-  "${qcow2_sha}" "qcow2/disk.qcow2" \
-  "${raw_sha}" "image/disk.raw.xz" \
-  >"${output_dir}/SHA256SUMS"
+printf '%s  %s\n' "${raw_sha}" "image/disk.raw.xz" >"${output_dir}/SHA256SUMS"
 
-echo "built Homecore disks under ${output_dir}"
-echo "next: just smoke"
+echo "built Homecore raw disk under ${output_dir}"
