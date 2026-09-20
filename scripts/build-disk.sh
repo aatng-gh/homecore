@@ -52,7 +52,16 @@ fi
 
 raw=${output_dir}/image/disk.raw
 compressed_raw=${raw}.xz
-[[ -s ${raw} ]] || { echo "builder did not produce ${raw}" >&2; exit 1; }
+if [[ ! -s ${raw} ]]; then
+  shopt -s nullglob
+  raw_candidates=("${output_dir}"/image/*.raw)
+  shopt -u nullglob
+  [[ ${#raw_candidates[@]} -eq 1 && -s ${raw_candidates[0]} ]] || {
+    echo "builder did not produce exactly one raw disk under ${output_dir}/image" >&2
+    exit 1
+  }
+  mv "${raw_candidates[0]}" "${raw}"
+fi
 xz --threads=0 --force "${raw}"
 
 if command -v sha256sum >/dev/null 2>&1; then
