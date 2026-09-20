@@ -1,0 +1,86 @@
+name: Release Homecore disk
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: homecore-disk-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and release raw disk
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: write
+      packages: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Free runner disk space
+        uses: ublue-os/remove-unwanted-software@cc0becac701cf642c8f0a6613bbdaf5dc36b259e # v9
+        with:
+          remove-codeql: true
+
+      - name: Build compressed raw disk
+        run: ./scripts/build-disk.sh
+
+      - name: Prepare release assets
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_path=build/disk/image/disk.raw.xz
+          [[ -s ${source_path} ]] || {
+            echo "disk builder did not produce ${source_path}" >&2
+            exit 1
+          }
+
+          mkdir release
+          cp "${source_path}" release/disk.raw.xz
+          sha256sum release/disk.raw.xz |
+            sed 's#  release/#  #' >release/SHA256SUMS
+          (cd release && sha256sum --check SHA256SUMS)
+
+          size=$(stat --format='%s' release/disk.raw.xz)
+          (( size < 2147483648 )) || {
+            echo "compressed disk is ${size} bytes; GitHub release assets must be smaller than 2 GiB" >&2
+            exit 1
+          }
+
+          short_revision=${GITHUB_SHA:0:12}
+          echo "tag=disk-${short_revision}" >>"${GITHUB_OUTPUT}"
+          echo "short_revision=${short_revision}" >>"${GITHUB_OUTPUT}"
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          SHORT_REVISION: ${{ steps.release.outputs.short_revision }}
+        run: |
+          set -euo pipefail
+          if ! gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            gh release create "${RELEASE_TAG}" \
+              --target "${GITHUB_SHA}" \
+              --title "Homecore disk ${SHORT_REVISION}" \
+              --notes "Raw x86-64 installer disk built from Homecore ${GITHUB_SHA}."
+          fi
+          gh release upload "${RELEASE_TAG}" \
+            release/disk.raw.xz release/SHA256SUMS --clobber
+
+      - name: Record installer inputs
+        env:
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          checksum=$(awk '$2 == "disk.raw.xz" {print $1}' release/SHA256SUMS)
+          {
+            echo '### Homelab installer inputs'
+            echo '```text'
+            echo "HOMECORE_RAW_IMAGE_URL=https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/disk.raw.xz"
+            echo "HOMECORE_RAW_IMAGE_SHA256=${checksum}"
+            echo '```'
+          } >>"${GITHUB_STEP_SUMMARY}"
