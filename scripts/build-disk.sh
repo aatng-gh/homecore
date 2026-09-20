@@ -20,13 +20,13 @@ output_dir=${HOMECORE_DISK_OUTPUT_DIR:-${repo_dir}/build/disk}
   echo "image must be a tagged registry reference" >&2
   exit 1
 }
-command -v podman >/dev/null 2>&1 || { echo "podman is required" >&2; exit 1; }
-command -v xz >/dev/null 2>&1 || { echo "xz is required" >&2; exit 1; }
-[[ $(uname -m) == x86_64 ]] || {
-  echo "Homecore disk builds currently require an x86-64 host" >&2
-  echo "run 'just image' for local ARM validation; CI publishes the x86-64 image" >&2
+[[ $(uname -s) == Linux && $(uname -m) == x86_64 ]] || {
+  echo "Homecore disk builds require an x86-64 Linux host" >&2
+  echo "use the GitHub release workflow for normal disk publication" >&2
   exit 1
 }
+command -v podman >/dev/null 2>&1 || { echo "podman is required" >&2; exit 1; }
+command -v xz >/dev/null 2>&1 || { echo "xz is required" >&2; exit 1; }
 homecore_podman_init
 
 mkdir -p "${output_dir}"
