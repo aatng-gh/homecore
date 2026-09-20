@@ -6,7 +6,6 @@ repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 . "${repo_dir}/config/versions.env"
 
 for name in \
-  FCOS_BASE_IMAGE \
   FCOS_CNI_RPM \
   FCOS_FIREWALLD_RPM \
   NOMAD_VERSION \
