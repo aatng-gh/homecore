@@ -33,6 +33,16 @@ mkdir -p "${output_dir}"
 output_dir=$(cd "${output_dir}" && pwd)
 
 "${podman_cmd[@]}" pull --arch amd64 "${image}"
+if [[ -n ${HOMECORE_EXPECTED_REVISION:-} ]]; then
+  actual_revision=$("${podman_cmd[@]}" image inspect \
+    --format '{{ index .Labels "org.opencontainers.image.revision" }}' "${image}")
+  [[ ${actual_revision} == "${HOMECORE_EXPECTED_REVISION}" ]] || {
+    echo "image revision mismatch for ${image}" >&2
+    echo "expected: ${HOMECORE_EXPECTED_REVISION}" >&2
+    echo "actual:   ${actual_revision:-<missing>}" >&2
+    exit 1
+  }
+fi
 "${podman_cmd[@]}" pull --arch amd64 "${IMAGE_BUILDER_IMAGE}"
 
 "${podman_cmd[@]}" run --rm --arch amd64 --privileged \

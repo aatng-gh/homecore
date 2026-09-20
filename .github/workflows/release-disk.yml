@@ -26,6 +26,8 @@ jobs:
           remove-codeql: true
 
       - name: Build compressed raw disk
+        env:
+          HOMECORE_EXPECTED_REVISION: ${{ github.sha }}
         run: ./scripts/build-disk.sh
 
       - name: Prepare release assets
