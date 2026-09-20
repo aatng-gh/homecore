@@ -14,7 +14,9 @@ for ignore_file in .containerignore .dockerignore; do
     exit 1
   }
 done
-# The Containerfile must defer expansion to the container builder.
+# The base must remain valid without injected build arguments and immutable.
+grep -Eq '^ARG FCOS_BASE_IMAGE=quay.io/fedora/fedora-coreos@sha256:[0-9a-f]{64}$' \
+  Containerfile
 # shellcheck disable=SC2016
 grep -Fxq 'FROM ${FCOS_BASE_IMAGE}' Containerfile
 grep -Fq 'sha256sum -c -' Containerfile

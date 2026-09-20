@@ -122,8 +122,10 @@ jobs:
           DIGEST: ${{ steps.build.outputs.digest }}
           REVISION: ${{ github.sha }}
         run: |
-          echo "### Homecore candidate" >>"${GITHUB_STEP_SUMMARY}"
-          echo '```text' >>"${GITHUB_STEP_SUMMARY}"
-          echo "${REGISTRY}/${IMAGE_NAME}@${DIGEST}" >>"${GITHUB_STEP_SUMMARY}"
-          echo "revision=${REVISION}" >>"${GITHUB_STEP_SUMMARY}"
-          echo '```' >>"${GITHUB_STEP_SUMMARY}"
+          {
+            echo "### Homecore candidate"
+            echo '```text'
+            echo "${REGISTRY}/${IMAGE_NAME}@${DIGEST}"
+            echo "revision=${REVISION}"
+            echo '```'
+          } >>"${GITHUB_STEP_SUMMARY}"
